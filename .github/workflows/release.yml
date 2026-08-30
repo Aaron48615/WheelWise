@@ -9,9 +9,12 @@ permissions:
 
 jobs:
   release:
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+
+      - name: Toolchain info
+        run: swift --version
 
       - name: Build universal app (arm64 + x86_64)
         run: APP_VERSION="${GITHUB_REF_NAME#v}" UNIVERSAL=1 bash scripts/build-app.sh

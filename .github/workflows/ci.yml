@@ -7,9 +7,12 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+
+      - name: Toolchain info
+        run: swift --version
 
       - name: Build
         run: swift build -c release
