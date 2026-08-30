@@ -1,0 +1,23 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build universal app (arm64 + x86_64)
+        run: APP_VERSION="${GITHUB_REF_NAME#v}" UNIVERSAL=1 bash scripts/build-app.sh
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/WheelWise-*.zip
+          generate_release_notes: true
