@@ -73,6 +73,17 @@ WheelWise 在系统 HID 层注册一个 `CGEventTap`（只监听滚轮事件）�
 
 ## 常见问题
 
+**Q: 辅助功能列表里找不到 WheelWise，或手动添加了也不生效？**
+先退出 WheelWise，执行下面命令清掉可能过期的授权记录，再重新打开应用，用系统弹出的原生授权对话框授权：
+
+```bash
+tccutil reset Accessibility com.wheelwise.WheelWise
+open /Applications/WheelWise.app
+```
+
+**Q: 重新构建/更新后又要重新授权？**
+ad-hoc 签名的应用每次重新构建，签名都会变化，macOS 会视为新应用。这是开发期现象；正式签名（Developer ID）后不会再发生。
+
 **Q: 触控板滚动会受影响吗？**
 不会。判定依据是事件本身的「连续/离散」标记，触控板事件完全不会被触碰。
 

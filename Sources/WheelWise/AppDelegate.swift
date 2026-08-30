@@ -120,6 +120,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             )
             window.center()
             onboardingWindow = window
+
+            // 触发系统原生授权弹窗。这一步会把 WheelWise 自动注册进
+            // 「辅助功能」列表（否则列表里根本不会出现本应用，手动添加
+            // 还容易被过期授权记录干扰）。
+            AXIsProcessTrustedWithOptions(
+                [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+            )
         }
         onboardingWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
