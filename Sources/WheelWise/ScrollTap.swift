@@ -101,12 +101,16 @@ final class ScrollTap {
         case .wheel:
             if settings.smoothScrolling {
                 smooth.speed = settings.scrollSpeed
+                // 方向取负与反转路径保持一致：引擎吃的是“原始”增量，
+                // 不取负的话平滑滚动的方向会回到系统默认（反向）
+                let signY: Double = settings.reverseVertical ? -1 : 1
+                let signX: Double = settings.reverseHorizontal ? -1 : 1
                 smooth.add(
-                    linesY: amount(
+                    linesY: signY * amount(
                         lines: event.getIntegerValueField(.scrollWheelEventDeltaAxis1),
                         points: event.getIntegerValueField(.scrollWheelEventPointDeltaAxis1)
                     ),
-                    linesX: amount(
+                    linesX: signX * amount(
                         lines: event.getIntegerValueField(.scrollWheelEventDeltaAxis2),
                         points: event.getIntegerValueField(.scrollWheelEventPointDeltaAxis2)
                     )
@@ -165,22 +169,20 @@ final class ScrollTap {
     }
 
     private func post(emission: SmoothScrollController.Emission) {
-        let pixelsY = emission.pixelsY.rounded()
-        let pixelsX = emission.pixelsX.rounded()
         guard let event = CGEvent(
             scrollWheelEvent2Source: nil,
             units: .pixel,
             wheelCount: 2,
-            wheel1: Int32(clamping: Int(pixelsY)),
-            wheel2: Int32(clamping: Int(pixelsX)),
+            wheel1: 0,
+            wheel2: 0,
             wheel3: 0
         ) else { return }
         event.setIntegerValueField(.eventSourceUserData, value: ScrollWheelEventIO.syntheticTag)
+        // 像素增量用 Double 原值写入，保留小数部分让 120Hz 下的动画更顺滑
         SyntheticScrollEventBuilder.apply(
             event,
-            pixelsY: pixelsY,
-            pixelsX: pixelsX,
-            pixelsPerLine: smooth.pixelsPerLine,
+            pixelsY: emission.pixelsY,
+            pixelsX: emission.pixelsX,
             phase: emission.phase
         )
         event.post(tap: .cghidEventTap)

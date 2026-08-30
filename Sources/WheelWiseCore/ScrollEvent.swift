@@ -9,8 +9,12 @@ public enum ScrollSource: Equatable, Sendable {
     case continuousSurface
 }
 
-/// 合成滚动事件的相位。位值与 NSEventPhase 一致
-/// （kCGScrollWheelEventScrollPhase 使用同一套位编码）。
+/// 合成滚动事件的相位。
+///
+/// 注意：kCGScrollWheelEventScrollPhase 的编码**不是** NSEventPhase 的位掩码，
+/// 而是：began=1、changed=2、ended=4（另有 8=取消、128=按住）；
+/// momentum 相位才用 1/2/3。写错编码的事件帧会被系统静默丢弃
+/// （实测表现：只有 began 帧生效，后续帧全部消失）。
 public enum SyntheticScrollPhase: Equatable, Sendable {
     case began
     case changed
@@ -18,9 +22,9 @@ public enum SyntheticScrollPhase: Equatable, Sendable {
 
     var cgRawValue: Int64 {
         switch self {
-        case .began: return 0x1
-        case .changed: return 0x4
-        case .ended: return 0x8
+        case .began: return 1
+        case .changed: return 2
+        case .ended: return 4
         }
     }
 
@@ -30,54 +34,23 @@ public enum SyntheticScrollPhase: Equatable, Sendable {
 
 /// 合成连续滚动事件的字段填充。
 ///
-/// 关键坑（与反转路径同源）：CG 滚动事件的增量字段存在耦合，
-/// 写 line 字段会联动重算 point/fixed 字段。因此每个轴必须按
-/// line → point → fixed 的顺序写入（该顺序在真实 CG 语义下由
-/// 单元测试验证），否则像素增量会被联动清零，表现为页面完全不动。
+/// 极简配方（与成熟实现一致）：只写整数像素增量、isContinuous 与相位，
+/// **完全不写 line/fixed 字段**——连续滚动事件由 point 增量驱动，而写
+/// line 字段会联动重算其他增量字段（CG 字段耦合）。point 增量字段内部
+/// 是整数（Double 写入会被截断），由调用方取整；亚像素精度由引擎的
+/// 剩余量天然保留。
 public enum SyntheticScrollEventBuilder {
     public static func apply(
         _ event: CGEvent,
         pixelsY: Double,
         pixelsX: Double,
-        pixelsPerLine: Double,
         phase: SyntheticScrollPhase
     ) {
         event.setIntegerValueField(.scrollWheelEventIsContinuous, value: 1)
         event.setIntegerValueField(.scrollWheelEventScrollPhase, value: phase.publicRawValue)
         event.setIntegerValueField(.scrollWheelEventMomentumPhase, value: 0)
-
-        fillAxis(
-            event,
-            pixels: pixelsY,
-            pixelsPerLine: pixelsPerLine,
-            line: .scrollWheelEventDeltaAxis1,
-            point: .scrollWheelEventPointDeltaAxis1,
-            fixed: .scrollWheelEventFixedPtDeltaAxis1
-        )
-        fillAxis(
-            event,
-            pixels: pixelsX,
-            pixelsPerLine: pixelsPerLine,
-            line: .scrollWheelEventDeltaAxis2,
-            point: .scrollWheelEventPointDeltaAxis2,
-            fixed: .scrollWheelEventFixedPtDeltaAxis2
-        )
-    }
-
-    private static func fillAxis(
-        _ event: CGEvent,
-        pixels: Double,
-        pixelsPerLine: Double,
-        line: CGEventField,
-        point: CGEventField,
-        fixed: CGEventField
-    ) {
-        let lineValue = Int64(pixels / pixelsPerLine)
-        let pointValue = Int64(pixels.rounded())
-        let fixedValue = Int64(pixels / pixelsPerLine * 65536)
-        event.setIntegerValueField(line, value: lineValue)
-        event.setIntegerValueField(point, value: pointValue)
-        event.setIntegerValueField(fixed, value: fixedValue)
+        event.setIntegerValueField(.scrollWheelEventPointDeltaAxis1, value: Int64(pixelsY.rounded()))
+        event.setIntegerValueField(.scrollWheelEventPointDeltaAxis2, value: Int64(pixelsX.rounded()))
     }
 }
 
