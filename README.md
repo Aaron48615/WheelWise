@@ -1,7 +1,7 @@
 # WheelWise
 
-[![CI](https://github.com/OWNER/wheelwise/actions/workflows/ci.yml/badge.svg)](../../actions)
-[![Release](https://img.shields.io/github/v/release/OWNER/wheelwise)](../../releases)
+[![CI](https://github.com/Aaron48615/WheelWise/actions/workflows/ci.yml/badge.svg)](../../actions)
+[![Release](https://img.shields.io/github/v/release/Aaron48615/WheelWise)](../../releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **让 macOS 鼠标滚轮的方向和网页滚动方向一致，同时完全不影响触控板。**
@@ -39,7 +39,7 @@ macOS 的「自然滚动」是全局设置：开启后触控板舒服了，但�
 ### 从源码构建
 
 ```bash
-git clone https://github.com/OWNER/wheelwise.git
+git clone https://github.com/Aaron48615/WheelWise.git
 cd wheelwise
 bash scripts/build-app.sh          # 产物: build/WheelWise.app
 open build/WheelWise.app
