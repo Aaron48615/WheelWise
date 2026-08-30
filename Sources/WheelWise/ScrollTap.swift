@@ -165,24 +165,24 @@ final class ScrollTap {
     }
 
     private func post(emission: SmoothScrollController.Emission) {
+        let pixelsY = emission.pixelsY.rounded()
+        let pixelsX = emission.pixelsX.rounded()
         guard let event = CGEvent(
             scrollWheelEvent2Source: nil,
             units: .pixel,
             wheelCount: 2,
-            wheel1: Int32(clamping: Int(emission.pixelsY.rounded())),
-            wheel2: Int32(clamping: Int(emission.pixelsX.rounded())),
+            wheel1: Int32(clamping: Int(pixelsY)),
+            wheel2: Int32(clamping: Int(pixelsX)),
             wheel3: 0
         ) else { return }
-        event.setIntegerValueField(.scrollWheelEventIsContinuous, value: 1)
         event.setIntegerValueField(.eventSourceUserData, value: ScrollWheelEventIO.syntheticTag)
-        event.setIntegerValueField(.scrollWheelEventScrollPhase, value: emission.phase.publicRawValue)
-        event.setIntegerValueField(.scrollWheelEventMomentumPhase, value: 0)
-        // 行/定点字段按像素折算，兼容以“行”为单位的 App。
-        let pps = smooth.pixelsPerLine
-        event.setIntegerValueField(.scrollWheelEventDeltaAxis1, value: Int64(emission.pixelsY / pps))
-        event.setIntegerValueField(.scrollWheelEventFixedPtDeltaAxis1, value: Int64(emission.pixelsY / pps * 65536))
-        event.setIntegerValueField(.scrollWheelEventDeltaAxis2, value: Int64(emission.pixelsX / pps))
-        event.setIntegerValueField(.scrollWheelEventFixedPtDeltaAxis2, value: Int64(emission.pixelsX / pps * 65536))
+        SyntheticScrollEventBuilder.apply(
+            event,
+            pixelsY: pixelsY,
+            pixelsX: pixelsX,
+            pixelsPerLine: smooth.pixelsPerLine,
+            phase: emission.phase
+        )
         event.post(tap: .cghidEventTap)
     }
 }

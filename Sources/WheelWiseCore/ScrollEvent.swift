@@ -28,6 +28,59 @@ public enum SyntheticScrollPhase: Equatable, Sendable {
     public var publicRawValue: Int64 { cgRawValue }
 }
 
+/// 合成连续滚动事件的字段填充。
+///
+/// 关键坑（与反转路径同源）：CG 滚动事件的增量字段存在耦合，
+/// 写 line 字段会联动重算 point/fixed 字段。因此每个轴必须按
+/// line → point → fixed 的顺序写入（该顺序在真实 CG 语义下由
+/// 单元测试验证），否则像素增量会被联动清零，表现为页面完全不动。
+public enum SyntheticScrollEventBuilder {
+    public static func apply(
+        _ event: CGEvent,
+        pixelsY: Double,
+        pixelsX: Double,
+        pixelsPerLine: Double,
+        phase: SyntheticScrollPhase
+    ) {
+        event.setIntegerValueField(.scrollWheelEventIsContinuous, value: 1)
+        event.setIntegerValueField(.scrollWheelEventScrollPhase, value: phase.publicRawValue)
+        event.setIntegerValueField(.scrollWheelEventMomentumPhase, value: 0)
+
+        fillAxis(
+            event,
+            pixels: pixelsY,
+            pixelsPerLine: pixelsPerLine,
+            line: .scrollWheelEventDeltaAxis1,
+            point: .scrollWheelEventPointDeltaAxis1,
+            fixed: .scrollWheelEventFixedPtDeltaAxis1
+        )
+        fillAxis(
+            event,
+            pixels: pixelsX,
+            pixelsPerLine: pixelsPerLine,
+            line: .scrollWheelEventDeltaAxis2,
+            point: .scrollWheelEventPointDeltaAxis2,
+            fixed: .scrollWheelEventFixedPtDeltaAxis2
+        )
+    }
+
+    private static func fillAxis(
+        _ event: CGEvent,
+        pixels: Double,
+        pixelsPerLine: Double,
+        line: CGEventField,
+        point: CGEventField,
+        fixed: CGEventField
+    ) {
+        let lineValue = Int64(pixels / pixelsPerLine)
+        let pointValue = Int64(pixels.rounded())
+        let fixedValue = Int64(pixels / pixelsPerLine * 65536)
+        event.setIntegerValueField(line, value: lineValue)
+        event.setIntegerValueField(point, value: pointValue)
+        event.setIntegerValueField(fixed, value: fixedValue)
+    }
+}
+
 /// scrollWheel 事件字段的读写与改写。纯逻辑，便于单元测试。
 ///
 /// 关键事实：触控板产生“连续”滚动事件（isContinuous = 1），
