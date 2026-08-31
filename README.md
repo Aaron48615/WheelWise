@@ -40,12 +40,14 @@ macOS 的「自然滚动」是全局设置：开启后触控板舒服了，但�
 
 ```bash
 git clone https://github.com/Aaron48615/WheelWise.git
-cd wheelwise
+cd WheelWise
 bash scripts/build-app.sh          # 产物: build/WheelWise.app
 open build/WheelWise.app
 ```
 
 依赖：Swift 6 工具链（完整 Xcode，或 Swift.org 工具链）。无任何第三方依赖。
+
+开发文档：[AGENTS.md](AGENTS.md)（构建/授权/避坑指南）、[docs/TECH-NOTES.md](docs/TECH-NOTES.md)（滚动事件技术细节）、[docs/ROADMAP.md](docs/ROADMAP.md)（路线图）、[CHANGELOG.md](CHANGELOG.md)（迭代记录）。
 
 跑测试：
 
@@ -137,6 +139,8 @@ A `CGEventTap` listens for scroll-wheel events. Continuous events (trackpad, `kC
 swift build && swift test
 bash scripts/build-app.sh   # → build/WheelWise.app (ad-hoc signed)
 ```
+
+Developer docs: [AGENTS.md](AGENTS.md) (build/permission/gotchas), [docs/TECH-NOTES.md](docs/TECH-NOTES.md) (scroll-event internals), [docs/ROADMAP.md](docs/ROADMAP.md), [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
