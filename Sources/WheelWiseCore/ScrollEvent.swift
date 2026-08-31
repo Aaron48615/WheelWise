@@ -34,12 +34,17 @@ public enum SyntheticScrollPhase: Equatable, Sendable {
 
 /// 合成连续滚动事件的字段填充。
 ///
-/// 极简配方（与成熟实现一致）：只写整数像素增量、isContinuous 与相位，
-/// **完全不写 line/fixed 字段**——连续滚动事件由 point 增量驱动，而写
-/// line 字段会联动重算其他增量字段（CG 字段耦合）。point 增量字段内部
-/// 是整数（Double 写入会被截断），由调用方取整；亚像素精度由引擎的
-/// 剩余量天然保留。
+/// 字段策略：像素增量（point）给 Chromium 系（浏览器/VSCode）等按像素
+/// 滚动的 App；行增量（line）与定点增量（fixed）给 AppKit/终端等按行
+/// 滚动的 App——三者都写，缺谁谁失灵（终端缺 line/fixed 时完全不动）。
+/// 折算采用系统惯例 1 行 = 10px。
+///
+/// 顺序必须按 line → point → fixed 写（写 line 会联动重算 point/fixed，
+/// 该顺序已在真实 CG 语义下用单元测试验证可保留全部显式值）。
 public enum SyntheticScrollEventBuilder {
+    /// 行 → 像素的系统惯例换算系数。
+    private static let pointsPerLine = 10.0
+
     public static func apply(
         _ event: CGEvent,
         pixelsY: Double,
@@ -49,8 +54,32 @@ public enum SyntheticScrollEventBuilder {
         event.setIntegerValueField(.scrollWheelEventIsContinuous, value: 1)
         event.setIntegerValueField(.scrollWheelEventScrollPhase, value: phase.publicRawValue)
         event.setIntegerValueField(.scrollWheelEventMomentumPhase, value: 0)
-        event.setIntegerValueField(.scrollWheelEventPointDeltaAxis1, value: Int64(pixelsY.rounded()))
-        event.setIntegerValueField(.scrollWheelEventPointDeltaAxis2, value: Int64(pixelsX.rounded()))
+        fillAxis(
+            event,
+            pixels: pixelsY,
+            line: .scrollWheelEventDeltaAxis1,
+            point: .scrollWheelEventPointDeltaAxis1,
+            fixed: .scrollWheelEventFixedPtDeltaAxis1
+        )
+        fillAxis(
+            event,
+            pixels: pixelsX,
+            line: .scrollWheelEventDeltaAxis2,
+            point: .scrollWheelEventPointDeltaAxis2,
+            fixed: .scrollWheelEventFixedPtDeltaAxis2
+        )
+    }
+
+    private static func fillAxis(
+        _ event: CGEvent,
+        pixels: Double,
+        line: CGEventField,
+        point: CGEventField,
+        fixed: CGEventField
+    ) {
+        event.setIntegerValueField(line, value: Int64(pixels / pointsPerLine))
+        event.setIntegerValueField(point, value: Int64(pixels.rounded()))
+        event.setIntegerValueField(fixed, value: Int64(pixels / pointsPerLine * 65536))
     }
 }
 

@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindow: NSWindow?
     private var onboardingWindow: NSWindow?
     private var pollTimer: Timer?
+    private let settingsModel = SettingsModel()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         frontmost.start()
@@ -88,7 +89,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func showSettings() {
         if settingsWindow == nil {
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 480, height: 620),
+                contentRect: NSRect(x: 0, y: 0, width: 480, height: 680),
                 styleMask: [.titled, .closable],
                 backing: .buffered,
                 defer: false
@@ -96,11 +97,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             window.title = "WheelWise 设置"
             window.isReleasedWhenClosed = false
             window.contentView = NSHostingView(
-                rootView: SettingsView(onEnabledChanged: { [weak self] in self?.refreshTapState() })
+                rootView: SettingsView(
+                    onEnabledChanged: { [weak self] in self?.refreshTapState() },
+                    model: settingsModel
+                )
             )
             window.center()
             settingsWindow = window
         }
+        // 在窗口抢走焦点之前快照前台应用，“添加刚才的前台应用”才有意义
+        settingsModel.refreshPreviousApp()
         settingsWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }

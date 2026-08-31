@@ -8,7 +8,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-VERSION="${APP_VERSION:-0.1.2}"
+VERSION="${APP_VERSION:-0.1.3}"
 BUILD="$(date +%Y%m%d)"
 APP="build/WheelWise.app"
 

@@ -84,7 +84,8 @@ struct ScrollEventTests {
         #expect(event.getIntegerValueField(.scrollWheelEventDeltaAxis2) == 3)
     }
 
-    /// 合成事件构造：像素增量必须原样保留（整数）、相位编码正确。
+    /// 合成事件构造：point/line/fixed 三路增量按写入顺序全部保留
+    /// （顺序错误会被 CG 字段联动清零或抵消），相位编码正确。
     @Test func syntheticBuilderPreservesPixelDeltas() {
         let event = CGEvent(
             scrollWheelEvent2Source: nil,
@@ -104,7 +105,13 @@ struct ScrollEventTests {
         #expect(event.getIntegerValueField(.scrollWheelEventIsContinuous) == 1)
         #expect(event.getIntegerValueField(.scrollWheelEventScrollPhase) == 2)
         #expect(event.getIntegerValueField(.scrollWheelEventMomentumPhase) == 0)
+        // 轴 1（5.6px = 0 行 5.6 像素，行折算 10px/行）
+        #expect(event.getIntegerValueField(.scrollWheelEventDeltaAxis1) == 0)
         #expect(event.getIntegerValueField(.scrollWheelEventPointDeltaAxis1) == 6)
+        #expect(event.getIntegerValueField(.scrollWheelEventFixedPtDeltaAxis1) == Int64(5.6 / 10 * 65536))
+        // 轴 2（-40.4px = -4 行），且不得破坏轴 1（跨轴耦合检查）
+        #expect(event.getIntegerValueField(.scrollWheelEventDeltaAxis2) == -4)
         #expect(event.getIntegerValueField(.scrollWheelEventPointDeltaAxis2) == -40)
+        #expect(event.getIntegerValueField(.scrollWheelEventFixedPtDeltaAxis2) == Int64(-40.4 / 10 * 65536))
     }
 }
